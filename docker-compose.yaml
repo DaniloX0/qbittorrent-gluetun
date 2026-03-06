@@ -1,0 +1,79 @@
+name: gluetun
+services:
+  gluetun:
+    cap_add:
+      - NET_ADMIN
+    cpu_shares: 90
+    command: []
+    container_name: gluetun
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - QBITTORRENT_WEB_UI=8080
+      - TZ=America/Sao_Paulo
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_STATUS_FILE=/gluetun/port_forward.txt
+      - VPN_PORT_FORWARDING_UP_COMMAND=/gluetun/update_port.sh
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_ADDRESSES= <IP-CLIENTE-wireguard>
+      - WIREGUARD_DNS= <IP-DNS>
+      - WIREGUARD_ENDPOINT_IP= <IP-ENDPOINT>
+      - WIREGUARD_PRIVATE_KEY= <chave-privada>
+      - WIREGUARD_PUBLIC_KEY= <chave-publica>
+    image: qmcgaw/gluetun:v3.41.0
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/qBittorrent/icon.png
+    ports:
+      - target: 8080
+        published: "8181"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/qbittorrent+gluetun/gluetun/data
+        target: /gluetun
+    network_mode: bridge
+    privileged: false
+  qbittorrent:
+    cpu_shares: 90
+    command: []
+    container_name: qbittorrent
+    depends_on:
+      gluetun:
+        condition: service_started
+        required: true
+    
+    environment:
+      - PGID=1000
+      - PUID=1000
+      - TZ=America/Sao_Paulo
+      - UMASK=002
+    image: ghcr.io/hotio/qbittorrent:release-5.0.4
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/qBittorrent/icon.png
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/qbittorrent+gluetun/qbittorrent/config
+        target: /config
+      - type: bind
+        source: /diretorio-armazenamento/media
+        target: /Media
+    ports: []
+    devices: []
+    cap_add: []
+    network_mode: container:gluetun
+    privileged: false
+x-casaos:
+  author: Danilo TI
+  category: Media server
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/qBittorrent/icon.png
+  index: /
+  is_uncontrolled: false
+  port_map: "8181"
+  scheme: http
+  store_app_id: gluetun
+  title:
+    custom: qbittorrent+gluetun
+    en_us: gluetun
